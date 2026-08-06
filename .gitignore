@@ -3,4 +3,4 @@ __pycache__/
 *.pyc
 .vscode/
 .idea/
-*.log
+*.loggit init

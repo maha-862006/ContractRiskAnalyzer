@@ -5,6 +5,16 @@ import spacy
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
+# -----------------------------
+# Download NLTK resources
+# -----------------------------
+nltk.download("stopwords")
+nltk.download("wordnet")
+nltk.download("omw-1.4")
+
+# -----------------------------
+# Load spaCy model
+# -----------------------------
 nlp = spacy.load("en_core_web_sm")
 
 stop_words = set(stopwords.words("english"))
@@ -14,19 +24,14 @@ lemmatizer = WordNetLemmatizer()
 
 def preprocess_sentence(sentence):
 
-    # Lowercase
     sentence = sentence.lower()
 
-    # Remove numbers
     sentence = re.sub(r"\d+", "", sentence)
 
-    # Remove punctuation
     sentence = re.sub(r"[^\w\s]", "", sentence)
 
-    # Remove extra spaces
     sentence = re.sub(r"\s+", " ", sentence).strip()
 
-    # spaCy tokenization
     doc = nlp(sentence)
 
     cleaned_words = []
