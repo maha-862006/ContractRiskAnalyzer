@@ -3,9 +3,11 @@ import joblib
 
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.preprocessing import LabelEncoder
+
+from lightgbm import LGBMClassifier
 
 from preprocessing.text_preprocessor import preprocess_sentence
 
@@ -23,7 +25,9 @@ print(f"\nDataset Loaded: {len(df)} records")
 # ----------------------------
 # Preprocess Text
 # ----------------------------
-df["Clean_Text"] = df["Risk Statement"].apply(preprocess_sentence)
+df["Clean_Text"] = df["Risk Statement"].apply(
+    preprocess_sentence
+)
 
 print("Text Preprocessed")
 
@@ -36,14 +40,25 @@ y = df["Category"]
 
 
 # ----------------------------
+# Encode Labels
+# ----------------------------
+label_encoder = LabelEncoder()
+y_encoded = label_encoder.fit_transform(y)
+
+print("\nCategories:")
+for number, category in enumerate(label_encoder.classes_):
+    print(f"{number}: {category}")
+
+
+# ----------------------------
 # Train/Test Split
 # ----------------------------
 X_train, X_test, y_train, y_test = train_test_split(
     X,
-    y,
+    y_encoded,
     test_size=0.2,
     random_state=42,
-    stratify=y
+    stratify=y_encoded
 )
 
 print(f"\nTraining Samples: {len(X_train)}")
@@ -55,9 +70,12 @@ print(f"Testing Samples : {len(X_test)}")
 # ----------------------------
 model = Pipeline([
     ("tfidf", TfidfVectorizer()),
-    ("classifier", SVC(
-        probability=True,
-        random_state=42
+    ("classifier", LGBMClassifier(
+        n_estimators=200,
+        learning_rate=0.1,
+        max_depth=6,
+        random_state=42,
+        verbosity=-1
     ))
 ])
 
@@ -75,21 +93,39 @@ print("\nTraining Complete")
 # ----------------------------
 predictions = model.predict(X_test)
 
-accuracy = accuracy_score(y_test, predictions)
+accuracy = accuracy_score(
+    y_test,
+    predictions
+)
 
 print("\n==============================")
 print(f"Accuracy: {accuracy:.2%}")
 print("==============================")
 
+
 print("\nClassification Report\n")
-print(classification_report(y_test, predictions))
+
+print(
+    classification_report(
+        y_test,
+        predictions,
+        target_names=label_encoder.classes_
+    )
+)
+
 
 print("\nConfusion Matrix\n")
-print(confusion_matrix(y_test, predictions))
+
+print(
+    confusion_matrix(
+        y_test,
+        predictions
+    )
+)
 
 
 # ----------------------------
-# Test Probability
+# Probability Test
 # ----------------------------
 probabilities = model.predict_proba(X_test)
 
@@ -102,7 +138,12 @@ print(f"Probability shape: {probabilities.shape}")
 # ----------------------------
 joblib.dump(
     model,
-    "saved_models/svm_category_model.pkl"
+    "saved_models/lightgbm_category_model.pkl"
 )
 
-print("\nSVM Model Saved Successfully!")
+joblib.dump(
+    label_encoder,
+    "saved_models/lightgbm_label_encoder.pkl"
+)
+
+print("\nLightGBM Model Saved Successfully!")

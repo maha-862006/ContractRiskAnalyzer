@@ -3,7 +3,7 @@ import joblib
 
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
@@ -23,7 +23,9 @@ print(f"\nDataset Loaded: {len(df)} records")
 # ----------------------------
 # Preprocess Text
 # ----------------------------
-df["Clean_Text"] = df["Risk Statement"].apply(preprocess_sentence)
+df["Clean_Text"] = df["Risk Statement"].apply(
+    preprocess_sentence
+)
 
 print("Text Preprocessed")
 
@@ -55,9 +57,13 @@ print(f"Testing Samples : {len(X_test)}")
 # ----------------------------
 model = Pipeline([
     ("tfidf", TfidfVectorizer()),
-    ("classifier", SVC(
-        probability=True,
-        random_state=42
+    ("classifier", MLPClassifier(
+        hidden_layer_sizes=(100, 50),
+        activation="relu",
+        solver="adam",
+        max_iter=500,
+        random_state=42,
+        early_stopping=True
     ))
 ])
 
@@ -75,21 +81,38 @@ print("\nTraining Complete")
 # ----------------------------
 predictions = model.predict(X_test)
 
-accuracy = accuracy_score(y_test, predictions)
+accuracy = accuracy_score(
+    y_test,
+    predictions
+)
 
 print("\n==============================")
 print(f"Accuracy: {accuracy:.2%}")
 print("==============================")
 
+
 print("\nClassification Report\n")
-print(classification_report(y_test, predictions))
+
+print(
+    classification_report(
+        y_test,
+        predictions
+    )
+)
+
 
 print("\nConfusion Matrix\n")
-print(confusion_matrix(y_test, predictions))
+
+print(
+    confusion_matrix(
+        y_test,
+        predictions
+    )
+)
 
 
 # ----------------------------
-# Test Probability
+# Probability Test
 # ----------------------------
 probabilities = model.predict_proba(X_test)
 
@@ -102,7 +125,7 @@ print(f"Probability shape: {probabilities.shape}")
 # ----------------------------
 joblib.dump(
     model,
-    "saved_models/svm_category_model.pkl"
+    "saved_models/mlp_category_model.pkl"
 )
 
-print("\nSVM Model Saved Successfully!")
+print("\nMLP Model Saved Successfully!")
