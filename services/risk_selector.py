@@ -376,15 +376,34 @@ def classify_sentence_type(sentence):
 
         return "Definition"
 
-    if re.search(
+        # ------------------------------------------------------------
+    # Rights
+    # ------------------------------------------------------------
+    # Treat explicit entitlement/right language as a Right.
+    # However, exclude sentences where the right is waived,
+    # released, relinquished, surrendered, or otherwise given up.
+    # ------------------------------------------------------------
+
+    right_grant = re.search(
         r"\bshall be entitled\b|"
         r"\bshall have the right\b|"
         r"\bright to\b|"
         r"\bmay claim\b|"
         r"\bmay be entitled\b",
         lower
-    ):
+    )
 
+    right_waiver = re.search(
+        r"\bwaive[sd]?\b|"
+        r"\bwaiver\b|"
+        r"\brelease[sd]?\b.*\bright\b|"
+        r"\brelinquish(?:es|ed|ing)?\b|"
+        r"\bsurrender(?:s|ed|ing)?\b|"
+        r"\bforfeit(?:s|ed|ing)?\b",
+        lower
+    )
+
+    if right_grant and not right_waiver:
         return "Right"
 
     signal = risk_signal_score(
@@ -839,7 +858,7 @@ def select_top_risks(
         )
 
         predicted_party = prediction.get(
-            "party",
+            "responsible_party",
             ""
         )
 
@@ -896,10 +915,13 @@ def select_top_risks(
 
             similarity = float(
                 match.get(
-                    "similarity",
-                    0
+                    "Similarity Score",
+                    match.get(
+                        "similarity",
+                        0
+                        )
+                    )
                 )
-            )
 
             # ------------------------------------------------
             # Concept compatibility
@@ -1015,7 +1037,7 @@ def select_top_risks(
 
                 "Category Confidence (%)":
                     round(
-                        category_confidence * 100,
+                        category_confidence,
                         2
                     ),
 
@@ -1033,7 +1055,7 @@ def select_top_risks(
 
                 "Party Confidence (%)":
                     round(
-                        party_confidence * 100,
+                        party_confidence,
                         2
                     ),
 
